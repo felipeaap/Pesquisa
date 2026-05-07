@@ -1,0 +1,11 @@
+biopython 
+requests 
+beautifulsoup4 
+lxml 
+tqdm
+aiohttp 
+aiofiles
+pdfminer.six 
+sentence-transformers 
+nltk 
+langdetect
