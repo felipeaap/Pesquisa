@@ -2,10 +2,13 @@ import asyncio
 from utils import save_checkpoint, save_jsonl_async, load_checkpoint, hash_text
 from pubmed.pubmed_fetcher import fetch_pubmed
 from scielo.scielo_fetcher import fetch_scielo
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+QUERIES = [q.strip() for q in os.getenv("QUERIES", "").split(",") if q.strip()]
 
 async def main():
-    from queries import QUERIES
-
     checkpoint = load_checkpoint()
 
     for q in QUERIES:
