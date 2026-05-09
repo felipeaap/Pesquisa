@@ -3,13 +3,12 @@ import json
 from pathlib import Path
 from collections import defaultdict
 
+from shared.langs import normalize_lang_key
+
 INPUT_FILE  = "data/output.jsonl"
 OUTPUT_FILE = "data/output_clean.jsonl"
 REPORT_FILE = "data/report.json"
 
-KNOWN_LANGUAGES = {
-    "en", "pt", "es", "fr", "de", "it", "zh", "ja", "ko", "ru", "ar", "default"
-}
 
 def load_jsonl(path: str) -> list[dict]:
     entries = []
@@ -32,7 +31,7 @@ def dedup(entries: list[dict]) -> tuple[list[dict], list[dict]]:
     for entry in entries:
         eid = entry.get("id")
         if not eid:
-            continue  # no id, can't dedup — keep it
+            continue
         if eid in seen:
             dupes.append(entry)
         else:
@@ -44,16 +43,13 @@ def dedup(entries: list[dict]) -> tuple[list[dict], list[dict]]:
 def classify_languages(entry: dict) -> dict:
     abstracts = entry.get("abstracts", {})
 
-    # normalize language keys
     normalized = {}
     for lang, text in abstracts.items():
-        lang = lang.lower().strip()
-        lang = lang if lang in KNOWN_LANGUAGES else "other"
         if text and text.strip():
-            normalized[lang] = text.strip()
+            normalized[normalize_lang_key(lang)] = text.strip()
 
-    entry["abstracts"]  = normalized
-    entry["languages"]  = sorted(normalized.keys())
+    entry["abstracts"]    = normalized
+    entry["languages"]    = sorted(normalized.keys())
     entry["multilingual"] = len(normalized) > 1
 
     return entry
@@ -72,13 +68,13 @@ def build_report(original, deduped, dupes) -> dict:
             multilingual += 1
 
     return {
-        "total_raw":        len(original),
-        "total_after_dedup": len(deduped),
+        "total_raw":          len(original),
+        "total_after_dedup":  len(deduped),
         "duplicates_removed": len(dupes),
         "multilingual_entries": multilingual,
-        "by_source":        dict(source_counts),
-        "by_language":      dict(sorted(lang_counts.items(), key=lambda x: -x[1])),
-        "duplicate_ids":    [d["id"] for d in dupes],
+        "by_source":          dict(source_counts),
+        "by_language":        dict(sorted(lang_counts.items(), key=lambda x: -x[1])),
+        "duplicate_ids":      [d["id"] for d in dupes],
     }
 
 
@@ -108,4 +104,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() 
