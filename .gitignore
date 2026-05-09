@@ -9,3 +9,5 @@ venv/
 papers/
 debug/
 pdfs/
+README.md
+extract.py

@@ -2,7 +2,6 @@ import aiofiles
 import json
 import hashlib
 
-
 CLEAN_FILE = "data/dataset_clean.jsonl"
 REPORT_FILE = "data/report.json"
 RAW_FILE = "data/dataset_raw.jsonl"
@@ -20,15 +19,6 @@ def load_checkpoint():
     except:
         return {"done_ids": []}
 
-
-def save_checkpoint(state):
-    with open(CHECKPOINT_FILE, "w") as f:
-        json.dump(state, f)
-
-async def save_jsonl_async(data):
-    async with aiofiles.open(RAW_FILE, "a", encoding="utf-8") as f:
-        await f.write(json.dumps(data, ensure_ascii=False) + "\n")
-
 def load_jsonl(path: str) -> list[dict]:
     entries = []
     with open(path, "r", encoding="utf-8") as f:
@@ -42,6 +32,10 @@ def load_jsonl(path: str) -> list[dict]:
                 print(f"[WARN] Line {i} is malformed, skipping: {e}")
     return entries
 
+async def save_jsonl_async(data):
+    async with aiofiles.open(RAW_FILE, "a", encoding="utf-8") as f:
+        await f.write(json.dumps(data, ensure_ascii=False) + "\n")
+
 def load_checkpoint():
     try:
         with open(CHECKPOINT_FILE, "r") as f:
@@ -53,7 +47,6 @@ def load_checkpoint():
 def save_checkpoint(state):
     with open(CHECKPOINT_FILE, "w") as f:
         json.dump(state, f)
-
 
 def hash_text(text):
     return hashlib.md5(text.encode()).hexdigest()
