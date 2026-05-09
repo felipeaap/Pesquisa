@@ -53,8 +53,8 @@ async def main():
 
             await save_jsonl_async(item)
             checkpoint["done_ids"].append(item_hash)
-            save_checkpoint(checkpoint)
-
+            
+        save_checkpoint(checkpoint)
         print(f"[DONE] {q} → {len(combined)} artigos")
 
 
