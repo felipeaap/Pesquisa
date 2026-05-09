@@ -9,3 +9,4 @@ pdfminer.six
 sentence-transformers 
 nltk 
 langdetect
+Brotli

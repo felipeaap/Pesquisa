@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.py[cod]
+*.jsonl
+*.json
+checkpoints/
+.venv/
+venv/
+papers/
+debug/
