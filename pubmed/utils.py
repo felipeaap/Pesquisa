@@ -1,4 +1,4 @@
-LANG_CODE_MAP = {
+ISO_6392_MAP = {
     # germanic
     "eng": "english", "deu": "german", "ger": "german", "nld": "dutch",
     "dut": "dutch", "swe": "swedish", "nor": "norwegian", "dan": "danish",

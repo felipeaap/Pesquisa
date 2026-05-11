@@ -2,7 +2,7 @@
 import arxiv
 from tqdm import tqdm
 
-MAX_ARXIV  = 1000   # reduce from 500 — arXiv rate limits aggressive pagination
+MAX_ARXIV  = 500   # reduce from 500 — arXiv rate limits aggressive pagination
 BATCH_SIZE = 100   # max per request
 DELAY      = 5.0   # seconds between pages — arXiv asks for 3s minimum
 
@@ -36,10 +36,10 @@ def fetch_arxiv(query: str, checkpoint: dict) -> list[dict]:
             results.append({
                 "source":    "arxiv",
                 "query":     query,
+                "authors":   [a.name for a in result.authors],
                 "id":        arxiv_id,
                 "doi":       result.doi or "",
                 "title":     result.title.strip(),
-                "authors":   [a.name for a in result.authors],
                 "abstracts": {"english": abstract},
             })
 

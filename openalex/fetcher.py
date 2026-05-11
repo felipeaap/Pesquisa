@@ -2,21 +2,12 @@
 import time
 import requests
 from tqdm import tqdm
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
+from openalex.utils import make_headers, infer_language, extract_authors, reconstruct_abstract
 
 BASE_URL    = "https://api.openalex.org/works"
 PER_PAGE    = 200
-MAX_RESULTS = 5000
-DELAY       = 1.0  # segundos entre páginas — respeita o rate limit sem chave
-
-def make_headers() -> dict:
-    email = os.getenv("ENTREZ_EMAIL", "")
-    # OpenAlex pede o email no User-Agent para tier "polite" (100k req/dia)
-    return {"User-Agent": f"pesquisa/1.0 (mailto:{email})"}
-
+MAX_RESULTS = 600
+DELAY       = 1.0
 
 def fetch_page(query: str, cursor: str = "*") -> dict | None:
     params = {
@@ -24,7 +15,7 @@ def fetch_page(query: str, cursor: str = "*") -> dict | None:
         "per_page": PER_PAGE,
         "cursor":   cursor,
         "filter":   "has_abstract:true",
-        "select":   "id,doi,title,language,abstract_inverted_index,primary_location",
+        "select": "id,doi,title,language,abstract_inverted_index,authorships,primary_location",
     }
     try:
         resp = requests.get(BASE_URL, params=params, headers=make_headers(), timeout=15)
@@ -33,23 +24,11 @@ def fetch_page(query: str, cursor: str = "*") -> dict | None:
     except Exception as e:
         return None
 
-
-def reconstruct_abstract(inverted_index: dict | None) -> str:
-    """OpenAlex armazena o abstract como índice invertido {palavra: [posições]}."""
-    if not inverted_index:
-        return ""
-    # reconstrói a ordem original das palavras
-    positions = []
-    for word, pos_list in inverted_index.items():
-        for pos in pos_list:
-            positions.append((pos, word))
-    return " ".join(word for _, word in sorted(positions))
-
-
 def fetch_openalex(query: str, checkpoint: dict) -> list[dict]:
     results = []
     cursor  = "*"
     total_fetched = 0
+    unknown_lang  = 0
 
     with tqdm(desc=f"[OpenAlex] {query}", unit="art") as pbar:
         while total_fetched < MAX_RESULTS:
@@ -63,7 +42,7 @@ def fetch_openalex(query: str, checkpoint: dict) -> list[dict]:
                 break
 
             for work in works:
-                openalex_id = work.get("id", "").replace("https://openalex.org/", "")
+                openalex_id = (work.get("id") or "").replace("https://openalex.org/", "")
 
                 if not openalex_id or openalex_id in checkpoint["done_ids"]:
                     continue
@@ -72,19 +51,17 @@ def fetch_openalex(query: str, checkpoint: dict) -> list[dict]:
                 if not abstract:
                     continue
 
-                lang = work.get("language") or "unknown"
+                lang = infer_language(work,abstract)
+                if lang == "unknown":
+                    unknown_lang += 1
 
                 results.append({
                     "source":    "openalex",
                     "query":     query,
+                    "authors":   extract_authors(work),
                     "id":        openalex_id,
                     "doi":       work.get("doi") or "",
                     "title":     (work.get("title") or "").strip(),
-                    "authors":   [
-                        a.get("author", {}).get("display_name") or ""
-                        for a in work.get("authorships", [])
-                        if a.get("author", {}).get("display_name")
-                    ],
                     "abstracts": {lang: abstract},
                 })
                 pbar.update(1)
@@ -97,5 +74,4 @@ def fetch_openalex(query: str, checkpoint: dict) -> list[dict]:
 
             cursor = next_cursor
             time.sleep(DELAY)
-
     return results

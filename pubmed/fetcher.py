@@ -13,7 +13,7 @@ api_key = os.getenv("ENTREZ_API_KEY")
 if api_key:
     Entrez.api_key = api_key
 
-MAX_PUBMED = 5000
+MAX_PUBMED = 400
 BATCH_SIZE = 200
 REQUEST_DELAY = 0.11 if api_key else 0.34  # 10 req/s with key, 3 req/s without
 

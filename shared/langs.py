@@ -1,11 +1,6 @@
-
-from pubmed.utils import LANG_CODE_MAP
+from openalex.utils import ISO_6391_MAP
+from pubmed.utils import ISO_6392_MAP
 from scielo.utils import KNOWN_LANGUAGES as SCIELO_LANGS
-
-LANG_CODES = set(LANG_CODE_MAP.keys())
-LANG_NAMES = SCIELO_LANGS
-LANGS = LANG_NAMES | set(LANG_CODE_MAP.values())
-
 
 LABEL_FIXES = {
     # english bleedthrough
@@ -40,8 +35,10 @@ def normalize_lang_key(lang: str) -> str:
     lang = lang.lower().strip()
     if lang in LABEL_FIXES:
         return LABEL_FIXES[lang]
-    if lang in LANG_CODES:
-        return LANG_CODE_MAP[lang]
-    if lang in LANG_NAMES:
+    if lang in ISO_6391_MAP.keys():
+        return ISO_6391_MAP[lang]
+    if lang in ISO_6392_MAP.keys():
+        return ISO_6392_MAP[lang]
+    if lang in SCIELO_LANGS:
         return lang
     return "other"

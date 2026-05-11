@@ -23,15 +23,13 @@ KNOWN_LANGUAGES = {
     "armenian", "swahili", "tagalog",
 }
 
-# matches "Abstract in english" — explicit language list prevents greedy capture
 LANG_MARKER = re.compile(
-    r'Abstract\s+in\s+(' + '|'.join(KNOWN_LANGUAGES) + r')\b',
+    r'Abstract\s+in\s+(' + '|'.join(sorted(KNOWN_LANGUAGES, key=len, reverse=True)) + r')(?=[A-Z\s\W]|$)',
     re.IGNORECASE
 )
 
-# strips leading section headers that bleed into the body
 HEADER_NOISE = re.compile(
-    r'^[\s\W]*(abstract|resumo|resumen|résumé|zusammenfassung)\b[\s\W]*',
+    r'^[\s\W]*(abstract|resumen|resumo|résumé|zusammenfassung|summary)\b[\s:.\-]*',
     re.IGNORECASE
 )
 
@@ -59,11 +57,16 @@ def extract_doi_from_text(text: str) -> str:
     return match.group(1).rstrip(".,)") if match else ""
 
 def extract_authors_from_card(art) -> list[str]:
-    authors_div = art.select_one("div.authors")
-    if not authors_div:
-        return []
-    return [
-        a.get_text(strip=True)
-        for a in authors_div.find_all("a")
-        if a.get_text(strip=True)
-    ]
+    """
+    Authors in SciELO search cards are <a> tags linking to Google Scholar.
+    Example: <a href="http://www.google.com/search?q=%22Dantas,%20Thaise%22">
+    """
+    authors = []
+    for a in art.find_all("a", href=True):
+        href = a.get("href", "")
+        if "google.com/search?q=" not in href:
+            continue
+        name = a.get_text(strip=True)
+        if name:
+            authors.append(name)
+    return authors
