@@ -9,7 +9,9 @@ from bs4 import BeautifulSoup
 from collections import defaultdict
 from playwright.async_api import async_playwright, BrowserContext
 from utils import log_event
-from scielo.utils import split_abstract_by_language, extract_pid, extract_doi, extract_doi_from_text, extract_authors_from_card
+from scielo.utils import (split_abstract_by_language, extract_pid, 
+                          extract_doi, extract_doi_from_text, 
+                          extract_authors_from_card, extract_date_from_card)
 from scielo.cookie import refresh_scielo_cookie
 from scielo.block_guard import fetch_with_retry, is_blocked, BLOCKED
 
@@ -170,6 +172,7 @@ async def fetch_scielo(query: str) -> list:
                         # DOI is in the article card text on the search page
                         doi = extract_doi_from_text(art.get_text())
                         authors = extract_authors_from_card(art)
+                        published = extract_date_from_card(art)
 
                         source_div = art.select_one("div.source")
                         abstract_div = source_div.find_next_sibling("div", class_=False) if source_div else None
@@ -183,6 +186,7 @@ async def fetch_scielo(query: str) -> list:
                                 "source":    "scielo",
                                 "query":     query,
                                 "authors":   authors,
+                                "published": published,
                                 "id":        extract_pid(link),
                                 "url":       link,
                                 "doi":       doi,
@@ -193,7 +197,7 @@ async def fetch_scielo(query: str) -> list:
                             task = asyncio.create_task(
                                 fetch_scielo_article(aio_session, link, semaphore, stats)
                             )
-                            all_tasks.append((task, title, link, doi, authors))
+                            all_tasks.append((task, title, link, doi, authors, published))
                         
                         pbar.update(1)
 
@@ -204,8 +208,8 @@ async def fetch_scielo(query: str) -> list:
             await browser.close()
             await aio_session.close()
 
-    gathered = await asyncio.gather(*[t for t, _, _, _, _ in all_tasks], return_exceptions=True)
-    for (_, title, link, doi, authors), abstract in zip(all_tasks, gathered):
+    gathered = await asyncio.gather(*[t for t, _, _, _, _, _ in all_tasks], return_exceptions=True)
+    for (_, title, link, doi, authors, published), abstract in zip(all_tasks, gathered):
         if isinstance(abstract, Exception) or not abstract:
             stats["no_abstract"] += 1
         else:
@@ -213,6 +217,7 @@ async def fetch_scielo(query: str) -> list:
                 "source":    "scielo",
                 "query":     query,
                 "authors":   authors,
+                "published": published,
                 "id":        extract_pid(link),
                 "url":       link,
                 "doi":       doi,

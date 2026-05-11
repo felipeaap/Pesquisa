@@ -60,3 +60,10 @@ def extract_authors(article_data: dict) -> list[str]:
         if name:
             authors.append(name)
     return authors
+
+def extract_date(article_data: dict) -> str:
+    pub_date = article_data.get("Journal", {}).get("JournalIssue", {}).get("PubDate", {})
+    year  = pub_date.get("Year", "")
+    month = pub_date.get("Month", "")
+    day   = pub_date.get("Day", "")
+    return "-".join(part for part in [year, month, day] if part)

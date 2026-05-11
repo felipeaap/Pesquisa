@@ -63,3 +63,12 @@ def extract_authors_from_card(art) -> list[str]:
         if 'q=au:"' in a.get("href", "")
         and a.get_text(strip=True)
     ]
+
+def extract_date_from_card(art) -> str:
+    source_div = art.select_one("div.source")
+    if not source_div:
+        return ""
+    text = source_div.get_text(strip=True)
+    # matches patterns like "jan 2026", "2024", "Mar 2023"
+    match = re.search(r'([A-Za-z]{3,9}\s+)?\d{4}', text)
+    return match.group(0).strip() if match else ""

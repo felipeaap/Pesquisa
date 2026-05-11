@@ -3,7 +3,7 @@ import time
 from dotenv import load_dotenv
 from tqdm import tqdm
 from Bio import Entrez
-from pubmed.utils import extract_pubmed_abstracts, extract_doi, extract_authors
+from pubmed.utils import extract_pubmed_abstracts, extract_doi, extract_authors, extract_date
 
 load_dotenv()
 
@@ -48,6 +48,7 @@ def fetch_pubmed(query, checkpoint):
                         "source":    "pubmed",
                         "query":     query,
                         "authors":   extract_authors(article_data),
+                        "published": extract_date(article_data),
                         "id":        pmid,
                         "doi":       extract_doi(article_data),   # add this
                         "title":     title,

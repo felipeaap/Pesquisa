@@ -37,6 +37,7 @@ def fetch_arxiv(query: str, checkpoint: dict) -> list[dict]:
                 "source":    "arxiv",
                 "query":     query,
                 "authors":   [a.name for a in result.authors],
+                "published": result.published.strftime("%Y-%m-%d") if result.published else "",
                 "id":        arxiv_id,
                 "doi":       result.doi or "",
                 "title":     result.title.strip(),

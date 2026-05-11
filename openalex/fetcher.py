@@ -15,7 +15,7 @@ def fetch_page(query: str, cursor: str = "*") -> dict | None:
         "per_page": PER_PAGE,
         "cursor":   cursor,
         "filter":   "has_abstract:true",
-        "select": "id,doi,title,language,abstract_inverted_index,authorships,primary_location",
+        "select": "id,doi,title,language,abstract_inverted_index,authorships,primary_location,publication_date",
     }
     try:
         resp = requests.get(BASE_URL, params=params, headers=make_headers(), timeout=15)
@@ -59,6 +59,7 @@ def fetch_openalex(query: str, checkpoint: dict) -> list[dict]:
                     "source":    "openalex",
                     "query":     query,
                     "authors":   extract_authors(work),
+                    "published": work.get("publication_date") or "",
                     "id":        openalex_id,
                     "doi":       work.get("doi") or "",
                     "title":     (work.get("title") or "").strip(),
