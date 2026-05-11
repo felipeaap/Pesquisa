@@ -4,11 +4,11 @@ import random
 import asyncio
 import aiohttp
 import urllib.parse
-from tqdm import tqdm
+from utils.progress import make_bar
 from bs4 import BeautifulSoup
 from collections import defaultdict
 from playwright.async_api import async_playwright, BrowserContext
-from utils import log_event
+from utils.files import log_event
 from scielo.utils import (split_abstract_by_language, extract_pid, 
                           extract_doi, extract_doi_from_text, 
                           extract_authors_from_card, extract_date_from_card)
@@ -107,7 +107,7 @@ async def fetch_scielo(query: str) -> list:
         browser, context = await make_playwright_context(playwright)
 
         try:
-            with tqdm(desc=f"[SciELO] {query}", unit="art") as pbar:
+            with make_bar("scielo", f"[SciELO] {query}", unit="art") as pbar:
                 while True:
                     params = {
                         "q": query,

@@ -1,22 +1,26 @@
-import asyncio
-import argparse
-from utils import save_checkpoint, save_jsonl_async, load_checkpoint, hash_text
-from pubmed.fetcher import fetch_pubmed
-from scielo.fetcher import fetch_scielo
-from arxiv_local.fetcher import fetch_arxiv
-from openalex.fetcher import fetch_openalex
+import tqdm
+tqdm.tqdm.monitor_interval = 0
+
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 QUERIES = [q.strip() for q in os.getenv("QUERIES", "").split(",") if q.strip()]
 
+from pubmed.fetcher import fetch_pubmed
+from scielo.fetcher import fetch_scielo
+from arxiv_local.fetcher import fetch_arxiv
+from openalex.fetcher import fetch_openalex
+
 FETCHERS = {
     "pubmed":    lambda q, cp: asyncio.get_event_loop().run_in_executor(None, fetch_pubmed, q, cp),
     "scielo":    lambda q, cp: fetch_scielo(q),
     "arxiv":     lambda q, cp: asyncio.get_event_loop().run_in_executor(None, fetch_arxiv, q, cp),
-    "openalex":  lambda q, cp: asyncio.get_event_loop().run_in_executor(None, fetch_openalex, q, cp),
+    "openalex":  lambda q, cp: fetch_openalex(q, cp),
 }
+
+
+import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Abstract scraper")
@@ -30,6 +34,8 @@ def parse_args():
     )
     return parser.parse_args()
 
+import asyncio
+from utils.files import save_checkpoint, save_jsonl_async, load_checkpoint, hash_text
 
 async def main():
     args = parse_args()
@@ -54,7 +60,7 @@ async def main():
             checkpoint["done_ids"].append(item_hash)
 
         save_checkpoint(checkpoint)
-        print(f"[DONE] {q} → {len(combined)} artigos")
+        print(f"[DONE] {q} → {len(combined)} artigos", flush=True)
 
 
 if __name__ == "__main__":

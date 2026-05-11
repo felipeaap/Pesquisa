@@ -2,37 +2,8 @@
 import json
 from pathlib import Path
 from collections import defaultdict
-from shared.langs import normalize_lang_key
-from utils import load_jsonl, slug, RAW_FILE, CLASSIFIED_DIR, REPORT_FILE
-
-def dedup(entries: list[dict]) -> tuple[list[dict], list[dict]]:
-    seen = {}
-    dupes = []
-    for entry in entries:
-        key = entry.get("doi") or entry.get("id")
-        if not key:
-            continue
-        if key in seen:
-            dupes.append(entry)
-        else:
-            seen[key] = entry
-    return list(seen.values()), dupes
-
-
-def classify_languages(entry: dict) -> dict:
-    abstracts = entry.get("abstracts", {})
-
-    normalized = {}
-    for lang, text in abstracts.items():
-        if text and text.strip():
-            normalized[normalize_lang_key(lang)] = text.strip()
-
-    entry["abstracts"]    = normalized
-    entry["languages"]    = sorted(normalized.keys())
-    entry["multilingual"] = len(normalized) > 1
-
-    return entry
-
+from utils.files import load_jsonl, slug, RAW_FILE, CLASSIFIED_DIR, REPORT_FILE
+from utils.classify import normalize_date, classify_languages, dedup
 
 def build_report(original, by_query, all_dupes) -> dict:
     lang_counts   = defaultdict(int)

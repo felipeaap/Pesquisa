@@ -2,7 +2,7 @@ import random
 import asyncio
 import time
 import os
-from utils import log_event
+from utils.files import log_event
 
 def random_headers() -> dict:
     return {

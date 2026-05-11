@@ -13,3 +13,4 @@ Brotli
 argparse
 arxiv
 langdetect
+dateutil

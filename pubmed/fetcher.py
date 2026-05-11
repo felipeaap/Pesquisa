@@ -1,9 +1,9 @@
 import os
 import time
 from dotenv import load_dotenv
-from tqdm import tqdm
 from Bio import Entrez
 from pubmed.utils import extract_pubmed_abstracts, extract_doi, extract_authors, extract_date
+from utils.progress import make_bar
 
 load_dotenv()
 
@@ -28,37 +28,39 @@ def fetch_pubmed(query, checkpoint):
 
     results = []
 
-    # batch into chunks of 200
-    for i in tqdm(range(0, len(ids), BATCH_SIZE),desc=f"[PubMed] {query}", unit="art"):
-        batch = ids[i:i + BATCH_SIZE]
+    with make_bar("pubmed", f"[PubMed] {query}", total=len(ids)) as pbar:
+        for i in range(0, len(ids), BATCH_SIZE):
+            batch = ids[i:i + BATCH_SIZE]
 
-        try:
-            fetch = Entrez.efetch(db="pubmed", id=batch, rettype="abstract", retmode="xml")
-            data = Entrez.read(fetch)
+            try:
+                fetch = Entrez.efetch(db="pubmed", id=batch, rettype="abstract", retmode="xml")
+                data = Entrez.read(fetch)
 
-            for article in data["PubmedArticle"]:
-                medline      = article["MedlineCitation"]
-                article_data = medline["Article"]
-                pmid         = str(medline["PMID"])
-                title        = str(article_data.get("ArticleTitle", ""))
-                abstracts    = extract_pubmed_abstracts(article_data)
+                for article in data["PubmedArticle"]:
+                    medline      = article["MedlineCitation"]
+                    article_data = medline["Article"]
+                    pmid         = str(medline["PMID"])
+                    title        = str(article_data.get("ArticleTitle", ""))
+                    abstracts    = extract_pubmed_abstracts(article_data)
 
-                if abstracts:
-                    results.append({
-                        "source":    "pubmed",
-                        "query":     query,
-                        "authors":   extract_authors(article_data),
-                        "published": extract_date(article_data),
-                        "id":        pmid,
-                        "doi":       extract_doi(article_data),   # add this
-                        "title":     title,
-                        "abstracts": abstracts,
-                    })
-                    checkpoint["done_ids"].append(pmid)
+                    if abstracts:
+                        results.append({
+                            "source":    "pubmed",
+                            "query":     query,
+                            "authors":   extract_authors(article_data),
+                            "published": extract_date(article_data),
+                            "id":        pmid,
+                            "doi":       extract_doi(article_data),   # add this
+                            "title":     title,
+                            "abstracts": abstracts,
+                        })
+                        checkpoint["done_ids"].append(pmid)
 
-        except Exception as e:
-            continue
+                    pbar.update(1)
+            except Exception as e:
+                continue
 
-        time.sleep(REQUEST_DELAY)  # respect rate limit between batches
+            time.sleep(REQUEST_DELAY)
+    
     return results
 
