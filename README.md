@@ -1,122 +1,223 @@
-# Pesquisa — Abstract Scraper
+# AbExtractor
 
-A research data pipeline that collects, deduplicates, and classifies scientific abstracts from **PubMed**, **ArXiV** and **SciELO** across multiple languages.
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![License](https://img.shields.io/badge/license-unlicensed-lightgrey)
+![Status](https://img.shields.io/badge/status-active-success)
+![Sources](https://img.shields.io/badge/sources-PubMed%20%7C%20ArXiv%20%7C%20SciELO-orange)
+![Dataset](https://img.shields.io/badge/output-JSONL%20%7C%20CSV-informational)
+![Async](https://img.shields.io/badge/pipeline-async%20parallel-purple)
+![Playwright](https://img.shields.io/badge/browser-playwright-green)
 
----
+> Multilingual scientific abstract collection, normalization, deduplication, and classification pipeline for PubMed, ArXiv, and SciELO.
 
-## Overview
-
-The pipeline runs queries against two sources in parallel, extracts multilingual abstracts, deduplicates by article ID, and normalizes language labels into a clean JSONL dataset.
-
-```
-.env: queries = ... → fetch.py ─┬─ pubmed.fetcher.py  → PubMed API (Entrez)
-                            └─ scielo.fetcher.py  → SciELO (Playwright + aiohttp)
-                                      ↓
-                               data/dataset_clean.jsonl
-                                      ↓
-                            tools/classify.py
-                                      ↓
-                        data/dataset_clean.jsonl + data/report.json
-```
+Pesquisa is a high-throughput research data pipeline focused on building structured datasets from scientific literature sources. The project fetches abstracts from multiple providers in parallel, normalizes multilingual metadata, deduplicates entries, classifies content by query/topic, and exports clean datasets for downstream NLP, ML, and academic analysis workflows.
 
 ---
 
-## Project Structure
+## Features
 
+- Parallel fetching from multiple scientific sources
+- PubMed integration through the Entrez API
+- ArXiv integration with batched API collection
+- SciELO scraping with anti-block handling
+- Automatic retry and adaptive backoff mechanisms
+- Checkpoint-based resumable execution
+- Multilingual abstract extraction and normalization
+- Language detection and canonical mapping
+- Deduplication by article identifier
+- Query-based dataset classification
+- JSONL-first pipeline for large-scale processing
+- CSV export utilities
+- Built for large dataset generation workflows
+
+---
+
+## Supported Sources
+
+| Source | Method | Notes |
+|---|---|---|
+| PubMed | Entrez API | High-volume biomedical abstract collection |
+| ArXiv | API | Scientific preprints and technical papers |
+| SciELO | Playwright + aiohttp | Handles multilingual Latin American journals |
+
+---
+
+## Project Architecture
+
+```text
+.env
+  ↓
+fetch.py
+  ├── pubmed/fetcher.py
+  ├── arxiv_local/fetcher.py
+  └── scielo/fetcher.py
+          ↓
+  data/dataset_raw.jsonl
+          ↓
+classify.py
+          ↓
+  data/classified/
+  data/report.json
 ```
+
+---
+
+## Repository Structure
+
+```text
 .
 ├── data/
-│   ├── dataset_raw.jsonl     # raw collected abstracts
-│   ├── dataset_clean.jsonl   # deduplicated and classified
-│   └── report.json           # run statistics
+│   ├── dataset_raw.jsonl
+│   ├── dataset_clean.jsonl
+│   ├── classified/
+│   └── report.json
+│
 ├── pubmed/
-│   ├── fetcher.py            # Entrez batch fetcher
-│   └── utils.py              # abstract extraction, language normalization
+│   ├── fetcher.py
+│   └── utils.py
+│
 ├── arxiv_local/
-│   ├── fetcher.py            # Arxiv API batch fetcher
+│   └── fetcher.py
+│
 ├── scielo/
-│   ├── fetcher.py            # Playwright + aiohttp scraper
-│   ├── block_guard.py        # retry logic, block detection, headers
-│   ├── cookie.py             # Playwright-based cookie refresh
-│   └── utils.py              # abstract splitting, PID extraction
+│   ├── fetcher.py
+│   ├── block_guard.py
+│   ├── cookie.py
+│   └── utils.py
+│
 ├── shared/
-│   └── langs.py              # unified language code/name mappings
+│   └── langs.py
+│
 ├── tools/
-│   └── classify.py           # dedup + language classification
-├── fetch.py                  # fetch — runs chosen fetchers in parallel
-├── classify.py               # classify — classify data by queries
-├── to_csv.py                 # convert selected file to csv
-├── utils.py                  # checkpoint, JSONL save, hashing
-├── .env                      # secrets and config (never committed)
-├── requirements.txt          # all needed libs
+│   └── classify.py
+│
+├── fetch.py
+├── classify.py
+├── to_csv.py
+├── utils.py
+├── requirements.txt
+├── .env
 └── .gitignore
 ```
 
 ---
 
-## Setup
+## Installation
 
-**Requirements**: Python 3.11+
+### Requirements
+
+- Python 3.11+
+- Chromium dependencies for Playwright
+
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Configure `.env`:**
+Install Playwright browser binaries:
+
+```bash
+playwright install chromium
+```
+
+---
+
+## Configuration
+
+Create a `.env` file in the project root:
 
 ```env
 ENTREZ_EMAIL=your@email.com
-ENTREZ_API_KEY=your_ncbi_key        # optional — raises rate limit from 3 to 10 req/s
-SCIELO_COOKIE=                      # auto-populated on first run
-QUERIES=renal physiology,...        # example, populate with your queries
+ENTREZ_API_KEY=your_ncbi_api_key
+SCIELO_COOKIE=
+
+QUERIES=renal physiology,cardiovascular physiology
 ```
+
+### Environment Variables
+
+| Variable | Description |
+|---|---|
+| `ENTREZ_EMAIL` | Email required by NCBI Entrez |
+| `ENTREZ_API_KEY` | Optional API key for higher PubMed rate limits |
+| `SCIELO_COOKIE` | Automatically refreshed when expired |
+| `QUERIES` | Comma-separated query list |
 
 ---
 
 ## Usage
 
-**Run the full pipeline:**
+### Run Data Collection
 
 ```bash
 python fetch.py
 ```
 
-Fetches all queries from both sources in parallel, saves results to `data/dataset_raw.jsonl`, and checkpoints progress so interrupted runs resume where they left off.
+This command:
 
-**Classify and deduplicate:**
+- Executes all configured queries
+- Fetches data from PubMed, ArXiv, and SciELO
+- Runs fetchers in parallel
+- Stores raw results in `data/dataset_raw.jsonl`
+- Saves checkpoints for resumable execution
+
+---
+
+### Run Classification and Deduplication
 
 ```bash
 python classify.py
 ```
 
-Reads `data/dataset_raw.jsonl`, removes duplicate IDs, normalizes language labels, and writes files classified by queries in `data/classified/` and `data/report.json`.
+This step:
+
+- Removes duplicate article IDs
+- Normalizes language labels
+- Separates datasets by query/topic
+- Generates statistics reports
+- Outputs classified datasets into `data/classified/`
 
 ---
 
-## Output Format
+### Export to CSV
 
-Each line in the output JSONL is one article:
+```bash
+python to_csv.py
+```
+
+Converts generated JSONL datasets into CSV format.
+
+---
+
+## Dataset Format
+
+Each line in the dataset is stored as a JSON object:
 
 ```json
 {
   "source": "scielo",
   "query": "renal physiology",
   "id": "S0080-62342026000100413",
-  "url": "http://...",
+  "url": "https://example.org/article",
   "title": "Impact of invasive mechanical ventilation...",
   "abstracts": {
+    "english": "ABSTRACT...",
     "portuguese": "RESUMO...",
-    "spanish": "RESUMEN...",
-    "english": "ABSTRACT..."
+    "spanish": "RESUMEN..."
   },
-  "languages": ["english", "portuguese", "spanish"],
+  "languages": [
+    "english",
+    "portuguese",
+    "spanish"
+  ],
   "multilingual": true
 }
 ```
 
 ---
 
-## Report Format
+## Generated Report Example
 
 ```json
 {
@@ -125,15 +226,7 @@ Each line in the output JSONL is one article:
   "duplicates_removed": 717,
   "multilingual_entries": 636,
   "by_query": {
-    "cardiovascular physiology": 9274,
-    "cellular physiology": 8857,
-    "digestive physiology": 9534,
-    "endocrine physiology": 7908,
-    "general physiology": 6729,
-    "nervous physiology": 9058,
-    "renal physiology": 9671,
-    "reproductive physiology": 8637,
-    "respiratory physiology": 9455
+    "renal physiology": 9671
   },
   "by_source": {
     "pubmed": 78248,
@@ -141,47 +234,157 @@ Each line in the output JSONL is one article:
   },
   "by_language": {
     "english": 77549,
-    "chinese": 785,
     "spanish": 478,
-    "portuguese": 305,
-  },
-  "duplicate_ids": [
-    "42104836",
-    "42104080",
-  ]
+    "portuguese": 305
+  }
+}
 ```
 
 ---
 
-## Language Support
+## Language Normalization
 
-Abstracts are normalized to full language names (e.g. `"en"` → `"english"`, `"eng"` → `"english"`). Supported ISO 639-1 and ISO 639-2 codes cover 40+ languages across Germanic, Romance, Slavic, Semitic, East Asian, and South/Southeast Asian families.
+Pesquisa normalizes language codes into canonical language names.
+
+Examples:
+
+| Raw Code | Normalized |
+|---|---|
+| `en` | `english` |
+| `eng` | `english` |
+| `pt` | `portuguese` |
+| `es` | `spanish` |
+
+The project currently supports 40+ ISO-639 language mappings.
 
 ---
 
-## Block Handling (SciELO)
+## SciELO Anti-Block System
 
-SciELO is behind Bunny CDN bot protection. The scraper handles this with:
+SciELO uses CDN-level anti-bot protections. Pesquisa includes a dedicated handling layer for stable collection.
 
-- **Playwright** for all search pagination (real Chromium TLS fingerprint)
-- **aiohttp** for individual article fetches (faster, CDN less aggressive on direct URLs)
-- **Automatic cookie refresh** via Playwright when a block is detected
-- **Block retry cap** of 3 attempts per page before aborting the query
-- **Adaptive delay** that backs off when results look sparse
+### Protection Handling Features
 
-If the cookie expires between runs, it is refreshed automatically on the next execution.
+- Real Chromium fingerprinting through Playwright
+- Async article retrieval through aiohttp
+- Automatic cookie refresh system
+- Retry and block detection logic
+- Adaptive delay and backoff strategies
+- Query abort safeguards after repeated failures
+
+This hybrid approach allows faster scraping while minimizing block frequency.
 
 ---
 
 ## Checkpointing
 
-Progress is saved after each query to a checkpoint file. Re-running the pipeline skips already-collected article IDs, so interrupted runs are safe to resume without duplicating data.
+Progress is automatically persisted after query execution.
+
+If the pipeline stops unexpectedly:
+
+- Previously processed IDs are skipped
+- Completed queries are preserved
+- Collection resumes safely without duplication
 
 ---
 
-## Notes
+## Performance Notes
 
-- PubMed fetches up to 20000 results per query in batches of 200 via the Entrez API
-- Arxiv fetches up to 20000 results per query in batches of 100 via the Arxiv API
-- SciELO paginates until a page returns 0 results
-- A free NCBI API key is recommended — get one at [ncbi.nlm.nih.gov/account](https://www.ncbi.nlm.nih.gov/account/)
+### PubMed
+
+- Up to 20,000 results per query
+- Batched in groups of 200
+- Higher rate limits available with NCBI API keys
+
+### ArXiv
+
+- Up to 20,000 results per query
+- Batched in groups of 100
+
+### SciELO
+
+- Pagination continues until no additional results are found
+- Adaptive delays reduce block probability
+
+---
+
+## Use Cases
+
+Pesquisa can be used for:
+
+- Scientific NLP datasets
+- Multilingual language modeling
+- Research trend analysis
+- Biomedical abstract mining
+- Academic search indexing
+- Topic clustering pipelines
+- RAG dataset preparation
+- Translation and multilingual corpora generation
+
+---
+
+## Example Workflow
+
+```bash
+# 1. Configure queries
+nano .env
+
+# 2. Fetch datasets
+python fetch.py
+
+# 3. Deduplicate and classify
+python classify.py
+
+# 4. Export CSV if needed
+python to_csv.py
+```
+
+---
+
+## Future Improvements
+
+Potential roadmap ideas:
+
+- Semantic deduplication using embeddings
+- PDF full-text extraction
+- Additional scientific sources
+- Distributed fetching workers
+- PostgreSQL dataset backend
+- FAISS/vector database integration
+- HuggingFace dataset export
+- Advanced metadata enrichment
+- Automatic topic modeling
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+Suggested areas:
+
+- New source integrations
+- Improved anti-block systems
+- Performance optimizations
+- Metadata extraction improvements
+- Additional export formats
+- Better language detection
+
+---
+
+## License
+
+This repository currently does not define a license.
+
+Consider adding a license file before public distribution or external contributions.
+
+---
+
+## Acknowledgements
+
+- NCBI Entrez API
+- ArXiv API
+- SciELO
+- Playwright
+- aiohttp
+
