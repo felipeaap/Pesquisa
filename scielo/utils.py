@@ -57,16 +57,9 @@ def extract_doi_from_text(text: str) -> str:
     return match.group(1).rstrip(".,)") if match else ""
 
 def extract_authors_from_card(art) -> list[str]:
-    """
-    Authors in SciELO search cards are <a> tags linking to Google Scholar.
-    Example: <a href="http://www.google.com/search?q=%22Dantas,%20Thaise%22">
-    """
-    authors = []
-    for a in art.find_all("a", href=True):
-        href = a.get("href", "")
-        if "google.com/search?q=" not in href:
-            continue
-        name = a.get_text(strip=True)
-        if name:
-            authors.append(name)
-    return authors
+    return [
+        a.get_text(strip=True)
+        for a in art.find_all("a", href=True)
+        if 'q=au:"' in a.get("href", "")
+        and a.get_text(strip=True)
+    ]
