@@ -2,6 +2,7 @@ import asyncio
 import os
 from playwright.async_api import async_playwright
 from dotenv import set_key
+from tqdm import tqdm
 
 DOTENV_PATH = ".env"
 
@@ -25,7 +26,7 @@ async def refresh_scielo_cookie(verify_query: str = "renal") -> str:
                 break
             await asyncio.sleep(0.5)
         else:
-            print("[Cookie] Warning: bunny_shield cookie never appeared")
+            tqdm.write("[Cookie] Warning: bunny_shield cookie never appeared")
 
         # step 3: do one real search request inside Playwright so the cookie
         # gets validated against a real browser fingerprint before we extract it
@@ -46,5 +47,5 @@ async def refresh_scielo_cookie(verify_query: str = "renal") -> str:
 
         set_key(DOTENV_PATH, "SCIELO_COOKIE", cookie_str)
         os.environ["SCIELO_COOKIE"] = cookie_str  # update live env immediately
-        print(f"[Cookie] Refreshed: {cookie_str[:80]}...")
+        tqdm.write(f"[Cookie] Refreshed: {cookie_str[:80]}...")
         return cookie_str

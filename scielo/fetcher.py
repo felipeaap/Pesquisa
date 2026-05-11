@@ -107,7 +107,7 @@ async def fetch_scielo(query: str) -> list:
         browser, context = await make_playwright_context(playwright)
 
         try:
-            with make_bar("scielo", f"[SciELO] {query}", unit="art") as pbar:
+            with make_bar("scielo", f"[SciELO] {query}") as pbar:
                 while True:
                     params = {
                         "q": query,
@@ -203,7 +203,6 @@ async def fetch_scielo(query: str) -> list:
 
                     page += 1
                     await asyncio.sleep(delay)
-
         finally:
             await browser.close()
             await aio_session.close()
@@ -224,6 +223,5 @@ async def fetch_scielo(query: str) -> list:
                 "title":     title,             
                 "abstracts": split_abstract_by_language(abstract),
             })
-
     await log_event({"event": "scielo_summary", "query": query, "stats": dict(stats)})
     return results

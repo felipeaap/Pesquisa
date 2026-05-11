@@ -13,9 +13,9 @@ from arxiv_local.fetcher import fetch_arxiv
 from openalex.fetcher import fetch_openalex
 
 FETCHERS = {
-    "pubmed":    lambda q, cp: asyncio.get_event_loop().run_in_executor(None, fetch_pubmed, q, cp),
+    "pubmed":    lambda q, cp: fetch_pubmed(q, cp),
     "scielo":    lambda q, cp: fetch_scielo(q),
-    "arxiv":     lambda q, cp: asyncio.get_event_loop().run_in_executor(None, fetch_arxiv, q, cp),
+    "arxiv":     lambda q, cp: fetch_arxiv(q, cp),
     "openalex":  lambda q, cp: fetch_openalex(q, cp),
 }
 
@@ -40,7 +40,7 @@ from utils.files import save_checkpoint, save_jsonl_async, load_checkpoint, hash
 async def main():
     args = parse_args()
     selected = args.sources
-    print(f"[Runner] Sources: {', '.join(selected)}")
+    tqdm.tqdm.write(f"[Runner] Sources: {', '.join(selected)}")
 
     checkpoint = load_checkpoint()
 
@@ -60,7 +60,7 @@ async def main():
             checkpoint["done_ids"].append(item_hash)
 
         save_checkpoint(checkpoint)
-        print(f"[DONE] {q} → {len(combined)} artigos", flush=True)
+        tqdm.tqdm.write(f"[DONE] {q} → {len(combined)} artigos")
 
 
 if __name__ == "__main__":

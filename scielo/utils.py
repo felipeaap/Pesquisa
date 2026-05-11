@@ -65,10 +65,17 @@ def extract_authors_from_card(art) -> list[str]:
     ]
 
 def extract_date_from_card(art) -> str:
-    source_div = art.select_one("div.source")
+    source_div = art.select_one("div.line.source")
     if not source_div:
         return ""
-    text = source_div.get_text(strip=True)
-    # matches patterns like "jan 2026", "2024", "Mar 2023"
-    match = re.search(r'([A-Za-z]{3,9}\s+)?\d{4}', text)
-    return match.group(0).strip() if match else ""
+
+    # preserve spaces between spans
+    text = source_div.get_text(" ", strip=True)
+
+    # matches:
+    # "jun 2026"
+    # "Mar 2023"
+    # "2024"
+    match = re.search(r'\b(?:[A-Za-z]{3,9}\s+)?\d{4}\b', text)
+
+    return match.group(0) if match else ""
