@@ -107,7 +107,7 @@ async def fetch_scielo(query: str) -> list:
         browser, context = await make_playwright_context(playwright)
 
         try:
-            with make_bar("scielo", f"[SciELO] {query}", unit="art") as pbar:
+            with make_bar("scielo", f"[SciELO] {query}") as pbar:
                 while True:
                     params = {
                         "q": query,
