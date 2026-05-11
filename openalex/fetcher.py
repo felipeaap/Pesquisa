@@ -19,7 +19,7 @@ from utils.files import log_event
 BASE_URL = "https://api.openalex.org/works"
 
 PER_PAGE = 200
-MAX_RESULTS = 600
+MAX_RESULTS = 10000
 
 REQUEST_TIMEOUT = 20
 MAX_CONNECTIONS = 20

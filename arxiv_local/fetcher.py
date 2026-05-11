@@ -7,7 +7,7 @@ from utils.progress import make_bar
 from utils.files import log_event
 
 
-MAX_ARXIV = 500
+MAX_ARXIV = 2000
 BATCH_SIZE = 100
 DELAY = 5.0
 MAX_RETRIES = 5
